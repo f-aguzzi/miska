@@ -1,17 +1,21 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, App, HttpResponse, HttpServer, Responder};
+use miska::wasm_loader;
 
 #[get("/")]
 async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
+    HttpResponse::Ok().body("Hello from Miska!")
 }
 
-#[post("/echo")]
-async fn echo(req_body: String) -> impl Responder {
-    HttpResponse::Ok().body(req_body)
+#[get("/about")]
+async fn about() -> impl Responder {
+    HttpResponse::Ok().body("This is the Miska lambda bucket.")
 }
 
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there!")
+#[get("/test")]
+async fn handler() -> impl Responder {
+    let wasm_module = format!("{}{}", "test", ".wasm");  
+    let value = wasm_loader(wasm_module).expect("");
+    HttpResponse::Ok().body(value)
 }
 
 #[actix_web::main]
@@ -19,8 +23,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(hello)
-            .service(echo)
-            .route("/hey", web::get().to(manual_hello))
+            .service(about)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
