@@ -13,8 +13,8 @@ async fn about() -> impl Responder {
 
 #[get("/test")]
 async fn handler() -> impl Responder {
-    let wasm_module = format!("{}{}", "test", ".wasm");  
-    let value = wasm_loader(wasm_module).expect("");
+    let wasm_module = format!("{}", "test.wasm");  
+    let value = wasm_loader(wasm_module).expect("Module not loaded");
     HttpResponse::Ok().body(value)
 }
 
@@ -24,6 +24,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .service(hello)
             .service(about)
+            .service(handler)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
