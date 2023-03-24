@@ -1,5 +1,6 @@
 use actix_web::{get, App, HttpResponse, HttpServer, Responder};
 use miska::wasm_loader;
+use actix_web::web::Path;
 
 #[get("/")]
 async fn hello() -> impl Responder {
@@ -11,9 +12,9 @@ async fn about() -> impl Responder {
     HttpResponse::Ok().body("This is the Miska lambda bucket.")
 }
 
-#[get("/test")]
-async fn handler() -> impl Responder {
-    let wasm_module = format!("{}", "test.wasm");  
+#[get("/{module}")]
+async fn handler(module: Path<String>) -> impl Responder {
+    let wasm_module = format!("{}{}", module, ".wasm");  
     let value = wasm_loader(wasm_module).expect("Module not loaded");
     HttpResponse::Ok().body(value)
 }
