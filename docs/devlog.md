@@ -12,14 +12,14 @@ Steps:
 After initializing the project with `cargo new`, I added Actix Web in the
 dependencies in `cargo.toml`:
 
-```{toml}
+```toml
 [dependencies]
 actix-web = "4"
 ```
 
 then copied and pasted the demo code from the Actix docs into `src/main.rs`:
 
-```{rust}
+```rust
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 
 #[get("/")]
@@ -58,7 +58,7 @@ on.
 
 ## Installing wasmtime
 
-```{toml}
+```toml
 [dependencies]
 wasmtime = "7"
 wasmtime-wasi = "7.0.0"
@@ -67,7 +67,7 @@ I added both wasmtime (a WASM engine for Rust) and its companion crate
 `wasmtime-wasi`, which adds the *WebAssembly System Interface* to `wasmtime`.
 
 The function
-```{rust}
+```rust
 #[get("/{module}")]
 async fn handler(module: Path<String>) -> impl Responder {
     let wasm_module = format!("{}{}", module, ".wasm");
