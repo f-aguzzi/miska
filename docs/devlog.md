@@ -55,3 +55,25 @@ Hello World demo page.
 The spawned `HttpServer' will use the provided handler functions to handle
 different requests. I will use this to hande the lambda functions later
 on.
+
+## Installing wasmtime
+
+```{toml}
+[dependencies]
+wasmtime = "7"
+wasmtime-wasi = "7.0.0"
+```
+I added both wasmtime (a WASM engine for Rust) and its companion crate
+`wasmtime-wasi`, which adds the *WebAssembly System Interface* to `wasmtime`.
+
+The function
+```{rust}
+#[get("/{module}")]
+async fn handler(module: Path<String>) -> impl Responder {
+    let wasm_module = format!("{}{}", module, ".wasm");
+    let value = wasm_loader(wasm_module).expect("Module not loaded");
+    HttpResponse::Ok().body(value)
+}
+```
+creates a handler which calls upon the `wasm_loader` function located in
+`lib.rs` which can load WASM modules through `wasmtime`.

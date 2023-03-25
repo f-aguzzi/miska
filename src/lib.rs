@@ -1,25 +1,34 @@
 use anyhow::Result;
+
 use wasmtime::*;
+use wasmtime_wasi::*;
 
-pub fn wasm_loader(module_name: String) -> Result<()> {
-
-    // Module loading and compilation
-    println!("Compiling module...");
+pub fn wasm_loader(module: String) -> Result<()> {
+    // Define the WASI functions globally on the `Config`.
     let engine = Engine::default();
-    let module = Module::from_file(&engine, module_name)?;
+    let mut linker = Linker::new(&engine);
+    wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
 
-    // Creation of store and instance
-    println!("Initializing...");
-    let mut store = Store::new(&engine, ());    // Empty store for now
-    let instance = Instance::new(&mut store, &module, &[])?;    // No imports for now
+    // Create a WASI context and put it in a Store; all instances in the store
+    // share this context. `WasiCtxBuilder` provides a number of ways to
+    // configure what the target program will have access to.
+    let wasi = WasiCtxBuilder::new()
+        .inherit_stdio()
+        .inherit_args()?
+        .build();
+    let mut store = Store::new(&engine, wasi);
 
-    // Locate the exported function
-    let run = instance.get_typed_func::<(), i32>(&mut store, "run")?;
+    // Instantiate our module with the imports we've created, and run it.
+    let module = Module::from_file(&engine, module)?;
+    linker.module(&mut store, "", &module)?;
+    let res = linker
+        .get_default(&mut store, "")?
+        .typed::<(), ()>(&store)?
+        .call(&mut store, ())?;
 
-    // Call the function and print the result
-    let res = run.call(&mut store, ())?;
-    println!("WebAssembly result: {}", res);
+    let instance = linker.instantiate(&mut store, &module)?;
+    let instance_main = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
+    instance_main.call(&mut store, ())?;
 
-    println!("Done.");
     Ok(())
 }
