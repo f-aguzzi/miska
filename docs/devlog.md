@@ -130,3 +130,52 @@ It's hard to understand what's actually going on. From some examples I found
 online *(outside of the documentation, obviously)*, it seems like `Arc<T>`
 pointers are needed to access the results of a function from the `Store`
 variable.
+
+### The easier way
+
+Since I don't understand how to use `Arc` pointers and all of that, I found
+an easier way (totally unorthodox, of course) to get the string result through
+a temporary file.
+
+On top of the usual stuff I had from before, I opened a temporary file, to
+convert it into a `cap-std` file (I added `cap-std` and `tempfile` to the
+dependencies), and finally into a `wasmtime-wasi` file.
+
+```rust
+// Instantiating a stdout file for later usage
+let temp_file = tempfile::tempfile()?;
+let mut capstd_file = CapStdFile::from_std(temp_file);
+let wasmtime_file = wasmtime_wasi::file::File::from_cap_std(capstd_file.try_clone()?);
+```
+
+The `wasmtime-wasi` file possesses the correct traits to be passed upon to
+`WasiCtxBuilder`:
+
+```rust
+// Create a WASI context and put it in a Store; all instances in the store
+// share this context. `WasiCtxBuilder` provides a number of ways to
+// configure what the target program will have access to.
+let wasi = WasiCtxBuilder::new()
+    .stdout(Box::new(wasmtime_file))
+    .build();
+let mut store = Store::new(&engine, wasi);
+```
+
+In the end, we can retrieve the result from memory and copy it into
+a string, by rewinding the file and then using a BufReader:
+
+```rust
+// Let's try to read the thing
+let mut output = String::new();
+capstd_file.seek(std::io::SeekFrom::Start(0))?; // seek to the beginning
+let stdout_file_handle = CapStdFile::into_std(capstd_file);
+let mut buf_reader = std::io::BufReader::new(stdout_file_handle);
+buf_reader.read_to_string(&mut output)?;
+
+Ok(output)
+```
+
+Also, I found out that the current version of `AssemblyScript` doesn't support
+`WASI` out of the box anymore. I found a package called `wasi-shim`, that,
+when added as a dev dependency to the `AssemblyScript` project, will handle
+`WASI` correctly.
