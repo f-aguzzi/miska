@@ -179,3 +179,35 @@ Also, I found out that the current version of `AssemblyScript` doesn't support
 `WASI` out of the box anymore. I found a package called `wasi-shim`, that,
 when added as a dev dependency to the `AssemblyScript` project, will handle
 `WASI` correctly.
+
+### Passing data *to* the WASM module
+
+After finding a way to retrieve the result as a string, the next step is
+figuring out a way to pass data to the WASM function.
+
+This seems way easier than retrieving the result. It is possible to pass a
+reference to a vector of name/value tuples of environment variables to
+`WasiCtxBuilder`:
+
+```rust
+let envs: Vec<(String, String)> = vec![...];
+
+let wasi = WasiCtxBuilder::new()
+    .stdout(Box::new(stdout))
+    .envs(&envs)?
+    .build();
+```
+
+The updated handler, using the `Actix` way of handling queries, will look
+like this:
+
+```rust
+#[get("/{module}")]
+async fn handler(module: Path<String>, query: Query<HashMap<String, String>>)
+    -> impl Responder {
+    let wasm_module = format!("{}{}", module, ".wasm");
+    let value = invoke_wasm_module(wasm_module, query.into_inner())
+      .expect("Module not loaded");
+    HttpResponse::Ok().body(value)
+}
+```
