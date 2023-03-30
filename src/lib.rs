@@ -27,10 +27,6 @@ pub fn old_wasm_loader(module: String) -> Result<String> {
     // Instantiate our module with the imports we've created, and run it.
     let module = Module::from_file(&engine, module)?;
     linker.module(&mut store, "", &module)?;
-    let res = linker
-        .get_default(&mut store, "")?
-        .typed::<(), ()>(&store)?
-        .call(&mut store, ())?;
 
     let instance = linker.instantiate(&mut store, &module)?;
     let instance_main = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
@@ -74,10 +70,6 @@ pub fn wasm_loader(module: String, parameters: HashMap<String, String>) -> Resul
     // Instantiate our module with the imports we've created, and run it.
     let module = Module::from_file(&engine, module)?;
     linker.module(&mut store, "", &module)?;
-    let res = linker
-        .get_default(&mut store, "")?
-        .typed::<(), ()>(&store)?
-        .call(&mut store, ())?;
 
     let instance = linker.instantiate(&mut store, &module)?;
     let instance_main = instance.get_typed_func::<(), ()>(&mut store, "_start")?;
@@ -91,4 +83,10 @@ pub fn wasm_loader(module: String, parameters: HashMap<String, String>) -> Resul
     buf_reader.read_to_string(&mut output)?;
 
     Ok(output)
+}
+
+#[test]
+fn wasm_loader_test() {
+    let result = old_wasm_loader(String::from("stringtest.wasm"));
+    assert_eq!(result.unwrap(), String::from("Hello World!\n"));
 }

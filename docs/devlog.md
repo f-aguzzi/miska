@@ -211,3 +211,22 @@ async fn handler(module: Path<String>, query: Query<HashMap<String, String>>)
     HttpResponse::Ok().body(value)
 }
 ```
+
+## Fixing the double return
+
+Calling `stringtest.wasm` used to, for some reason I couldn't figure out,
+return the *Hello, World!* string twice. After adding some tests, I found out
+why it was the case:
+
+```rust
+let res = linker
+    .get_default(&mut store, "")?
+    .typed::<(), ()>(&store)?
+    .call(&mut store, ())?;
+```
+
+I had this line of dead code laying around in both the `wasm_loader` and
+`wasm_loader_old` functions, and it was basically calling the `_start`
+function before its time. It was called twice on every run, thus the double
+result. By removing it, now `stringtest.wasm` only returns *Hello, World!"
+once.
