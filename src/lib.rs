@@ -86,7 +86,18 @@ pub fn wasm_loader(module: String, parameters: HashMap<String, String>) -> Resul
 }
 
 #[test]
-fn wasm_loader_test() {
+fn old_wasm_loader_test() {
     let result = old_wasm_loader(String::from("stringtest.wasm"));
     assert_eq!(result.unwrap(), String::from("Hello World!\n"));
+}
+
+#[test]
+fn wasm_loader_test() {
+    let mut env = HashMap::new();
+    env.insert("text".to_string(), "this is an example".to_string());
+    let result = wasm_loader("envtest.wasm".to_string(), env);
+    assert_eq!(
+        result.unwrap(),
+        "Received text: this is an example\n".to_string()
+    );
 }
