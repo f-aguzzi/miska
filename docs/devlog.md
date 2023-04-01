@@ -230,3 +230,42 @@ I had this line of dead code laying around in both the `wasm_loader` and
 function before its time. It was called twice on every run, thus the double
 result. By removing it, now `stringtest.wasm` only returns *Hello, World!"
 once.
+
+## The WASM modules
+
+The original `WASM` `stringtest` module was made with `AssemblyScript`.
+However, since `AssemblyScript` doesn't support `WASI` out of the box anymore
+(I had to use `wasi-shim` and it was not very practical), I decided to remake
+the `stringtest` module (and the next module, `envtest`) as `Rust` subprojects
+and compile them to the `wasm32-wasi` target.
+
+It ended up working way better and easier than `AssemblyScript` would ever had
+and it makes me happier because I can work on an all-Rust project without
+having to deal with `node.js`.
+
+Let's break down the two modules we have for now:
+
+*stringtest:*
+```rust
+fn main() {
+    println!("Hello World!");
+}
+/*
+This is basically the rust remake of the previous AssemblyScript module and
+it just prints a line to stdout.
+*/
+```
+
+*envtest:*
+```rust
+fn main() {
+    let received_text = std::env::var("text").unwrap();
+    println!("Received text: {}", received_text);
+}
+/*
+This module tries to get the environment variable called "text" (it comes
+from the HashMap of key-value pairs that Actix extracts from the GET request,
+and that Wasmtime passes to the wasm module through the wasi API) and to
+print its value to stdout.
+*/
+```
